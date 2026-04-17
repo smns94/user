@@ -1,4 +1,4 @@
-import core  # core.so ဖိုင်ရှိရန် လိုအပ်သည်
+import core  # core.so ဖိုင် ရှိရန်လိုအပ်သည်
 import os
 import sys
 import time
@@ -11,21 +11,21 @@ SECRET_SALT = "ohmygod@123"
 LICENSE_FILE = os.path.join(os.path.expanduser("~"), ".turbo_license")
 
 def get_terminal_width():
-    """Screen ရဲ့ width ကို ယူပြီး Center ချိန်ရန်"""
+    """ဖုန်း Screen အကျယ်ကို တိုင်းတာရန်"""
     return shutil.get_terminal_size().columns
 
 def print_center(text, color=C_RESET):
-    """စာသားများကို အလယ်တည့်တည့်သို့ ပို့ပေးရန်"""
+    """စာသားများကို Screen အလယ်တည့်တည့်သို့ ပို့ပေးရန်"""
     width = get_terminal_width()
     for line in text.split('\n'):
         print(f"{color}{line.center(width)}{C_RESET}")
 
-def display_smns_banner():
-    """စတိုင်ကျသော SMNS Banner ကို Center ချိန်၍ ပြသရန်"""
+def display_smns_banner(did, key="N/A", expiry="N/A", status="PENDING"):
+    """စတိုင်ကျသော SMNS Banner နှင့် User Info ကို ပြသရန်"""
     os.system('clear')
     width = get_terminal_width()
     
-    # SMNS ASCII Art
+    # SMNS ASCII Logo
     smns_logo = """
  ██████╗███╗   ███╗███╗   ██╗███████╗
 ██╔════╝████╗ ████║████╗  ██║██╔════╝
@@ -34,15 +34,25 @@ def display_smns_banner():
 ██████╔╝██║ ╚═╝ ██║██║ ╚████║███████║
 ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝"""
 
-    border = "═" * (width - 10)
-    print(f"{C_CYAN}╔{border}╗{C_RESET}")
+    # ဘောင်မျဉ်းများကို ဘယ်ညာအညီ ချိန်ညှိခြင်း
+    border_line = "═" * (width - 4)
+    print(f"{C_CYAN}╔{border_line}╗{C_RESET}")
     print_center(smns_logo, C_GREEN + C_BOLD)
     print_center("SMNS TECHNOLOGY TOOLKIT", C_YELLOW + C_BOLD)
-    print(f"{C_CYAN}╚{border}╝{C_RESET}")
+    print(f"{C_CYAN}╠{border_line}╣{C_RESET}")
+    
+    # Device ID, Key, Expire Date ပြသရန် (ဘယ်ညာ ညီအောင် Padding ထည့်ထားသည်)
+    info_pad = 20
+    print(f"{C_CYAN}║ {C_YELLOW}DEVICE ID : {C_WHITE}{str(did).ljust(width - info_pad)}{C_CYAN} ║")
+    print(f"{C_CYAN}║ {C_YELLOW}KEY       : {C_WHITE}{str(key).ljust(width - info_pad)}{C_CYAN} ║")
+    print(f"{C_CYAN}║ {C_YELLOW}EXPIRE    : {C_WHITE}{str(expiry).ljust(width - info_pad)}{C_CYAN} ║")
+    print(f"{C_CYAN}║ {C_YELLOW}STATUS    : {C_GREEN if status != 'PENDING' else C_RED}{str(status).ljust(width - info_pad)}{C_CYAN} ║")
+    
+    print(f"{C_CYAN}╚{border_line}╝{C_RESET}")
 
 if __name__ == "__main__":
     try:
-        # Device ID နှင့် Time Manipulation စစ်ဆေးခြင်း
+        # core ထဲမှ Device ID ယူခြင်း
         did = core.get_device_id()
         
         if not core.check_time_manipulation():
@@ -50,53 +60,34 @@ if __name__ == "__main__":
             print_center("FATAL ERROR: System time manipulation detected!", C_RED)
             sys.exit(1)
 
-        authorized, expiry, status = False, None, "PENDING"
+        authorized, expiry, status, current_key = False, "N/A", "PENDING", "N/A"
         
-        # License File စစ်ဆေးခြင်း
+        # License စစ်ဆေးခြင်း
         if os.path.exists(LICENSE_FILE):
             with open(LICENSE_FILE, "r") as f:
-                saved_key = f.read().strip()
+                current_key = f.read().strip()
             
-            is_valid, msg, expiry = core.validate_key(did, saved_key)
+            is_valid, msg, exp = core.validate_key(did, current_key)
             if is_valid:
-                authorized, status = True, msg
-            elif core.verify_legacy_user(saved_key):
-                # Legacy Migration Logic
-                lt_exp = "212601010000"
-                raw_new = f"{did}{lt_exp}{SECRET_SALT}"
-                new_k = f"{hashlib.sha256(raw_new.encode()).hexdigest()[:12].upper()}{lt_exp}"
-                
-                with open(LICENSE_FILE, "w") as f:
-                    f.write(new_k)
-                
-                authorized, status = True, "VERIFIED_LIFETIME"
-                display_smns_banner()
-                print_center("LEGACY USER DETECTED! NEW LIFETIME KEY GENERATED:", C_CYAN)
-                print_center(new_k, C_GREEN + C_BOLD)
-                time.sleep(5)
-
-        display_smns_banner()
-        
-        # Activation Key တောင်းခံခြင်း
-        if not authorized:
-            print_center(f"Device ID: {did}", C_CYAN)
-            print(f"\n{C_CYAN}[?] Activation Key: {C_RESET}")
-            key = input(f"\033[92mroot@smns:~# \033[0m").strip().upper()
-            
-            v, m, e = core.validate_key(did, key)
-            if v:
-                with open(LICENSE_FILE, "w") as f: f.write(key)
-                display_smns_banner()
-                authorized = True
-            elif core.verify_legacy_user(key):
+                authorized, status, expiry = True, msg, exp
+            elif core.verify_legacy_user(current_key):
                 lt_exp = "212601010000"
                 raw_new = f"{did}{lt_exp}{SECRET_SALT}"
                 new_k = f"{hashlib.sha256(raw_new.encode()).hexdigest()[:12].upper()}{lt_exp}"
                 with open(LICENSE_FILE, "w") as f: f.write(new_k)
-                display_smns_banner()
-                print_center("NEW LIFETIME KEY GENERATED (SAVE THIS):", C_CYAN)
-                print_center(new_k, C_GREEN + C_BOLD)
-                time.sleep(5)
+                authorized, status, current_key, expiry = True, "VERIFIED_LIFETIME", new_k, "LIFETIME"
+
+        display_smns_banner(did, current_key, expiry, status)
+        
+        # Activation Key တောင်းခံခြင်း
+        if not authorized:
+            print(f"\n{C_CYAN}[?] Activation Key: {C_RESET}")
+            key_input = input(f"\033[92mroot@smns:~# \033[0m").strip().upper()
+            
+            v, m, e = core.validate_key(did, key_input)
+            if v:
+                with open(LICENSE_FILE, "w") as f: f.write(key_input)
+                display_smns_banner(did, key_input, e, m)
                 authorized = True
             else:
                 print_center("Invalid Activation Key!", C_RED)
@@ -104,7 +95,6 @@ if __name__ == "__main__":
 
         if authorized:
             # အောင်မြင်ပါက ပင်မ လုပ်ဆောင်ချက်ကို စတင်ရန်
-            print_center(f"STATUS: {status}", C_GREEN)
             core.start_process()
 
     except KeyboardInterrupt:
