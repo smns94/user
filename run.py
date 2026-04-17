@@ -1,113 +1,102 @@
-import core  # core.so ဖိုင် ရှိရန်လိုအပ်သည်
+import core  # core.so ဖိုင်ရှိရန် လိုအပ်ပါသည်
 import os
 import sys
 import time
 import hashlib
 import shutil
 
-# --- [ UI COLORS - CORRECTED SECTION ] ---
-# (C_WHITE ကို ဒီမှာ သတ်မှတ်ပေးလိုက်ပါပြီဗျ)
+# --- [ UI COLORS ] ---
 C_RED, C_CYAN, C_GREEN, C_YELLOW, C_WHITE, C_RESET, C_BOLD = '\033[91m', '\033[96m', '\033[92m', '\033[93m', '\033[97m', '\033[0m', '\033[1m'
 SECRET_SALT = "ohmygod@123"
 LICENSE_FILE = os.path.join(os.path.expanduser("~"), ".turbo_license")
 
 def get_terminal_width():
-    """ဖုန်း Screen အကျယ်ကို တိုင်းတာရန်"""
-    # Termux screen အကျယ်ကို ယူပါမည်
+    """Terminal ရဲ့ လက်ရှိအကျယ်ကို ယူရန်"""
     return shutil.get_terminal_size().columns
 
-def print_center(text, color=C_RESET):
-    """စာသားများကို Screen အလယ်တည့်တည့်သို့ ပို့ပေးရန်"""
-    width = get_terminal_width()
-    for line in text.split('\n'):
-        # စာသားများကို width အညီ center ချိန်ပါမည်
-        print(f"{color}{line.center(width)}{C_RESET}")
-
 def display_smns_banner(did, key="N/A", expiry="N/A", status="PENDING"):
-    """စတိုင်ကျသော SMNS Banner နှင့် User Info ကို ပြသရန်"""
+    """လေးထောင့်ဘောင်များ သေသပ်စွာ ချိန်ညှိထားသော Banner"""
     os.system('clear')
-    width = get_terminal_width()
+    w = get_terminal_width()
     
-    # SMNS ASCII Logo
-    smns_logo = """
- ██████╗███╗   ███╗███╗   ██╗███████╗
-██╔════╝████╗ ████║████╗  ██║██╔════╝
-╚█████╗ ██╔████╔██║██╔██╗ ██║███████╗
- ╚═══██╗██║╚██╔╝██║██║╚██╗██║╚════██║
-██████╔╝██║ ╚═╝ ██║██║ ╚████║███████║
-╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝"""
+    # ASCII Logo Section
+    logo = [
+        " ██████╗███╗   ███╗███╗   ██╗███████╗",
+        "██╔════╝████╗ ████║████╗  ██║██╔════╝",
+        "╚█████╗ ██╔████╔██║██╔██╗ ██║███████╗",
+        " ╚═══██╗██║╚██╔╝██║██║╚██╗██║╚════██║",
+        "██████╔╝██║ ╚═╝ ██║██║ ╚████║███████║",
+        "╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝"
+    ]
 
-    # ဘောင်မျဉ်းများကို ဘယ်ညာအညီ ချိန်ညှိခြင်း
-    # width အလိုက် မျဉ်းကြောင်းအကျယ်ကို ညှိပါမည်
-    border_line = "═" * (width - 4)
-    print(f"{C_CYAN}╔{border_line}╗{C_RESET}")
-    print_center(smns_logo, C_GREEN + C_BOLD)
-    print_center("SMNS TECHNOLOGY TOOLKIT", C_YELLOW + C_BOLD)
-    print(f"{C_CYAN}╠{border_line}╣{C_RESET}")
+    # Top Border
+    print(f"{C_CYAN}┌{'─'*(w-2)}┐{C_RESET}")
+    for line in logo:
+        print(f"{C_CYAN}│{C_GREEN}{C_BOLD}{line.center(w-2)}{C_CYAN}│{C_RESET}")
     
-    # Device ID, Key, Expire Date ပြသရန် (C_WHITE ကို သုံးထားသည်)
-    # info_pad ကို ချိန်ညှိပြီး ဘယ်ညာအညီဖြစ်အောင် ညှိထားပါသည်
-    info_pad = 20
-    print(f"{C_CYAN}║ {C_YELLOW}DEVICE ID : {C_WHITE}{str(did).ljust(width - info_pad)}{C_CYAN} ║")
-    print(f"{C_CYAN}║ {C_YELLOW}KEY       : {C_WHITE}{str(key).ljust(width - info_pad)}{C_CYAN} ║")
-    print(f"{C_CYAN}║ {C_YELLOW}EXPIRE    : {C_WHITE}{str(expiry).ljust(width - info_pad)}{C_CYAN} ║")
-    print(f"{C_CYAN}║ {C_YELLOW}STATUS    : {C_GREEN if status != 'PENDING' else C_RED}{str(status).ljust(width - info_pad)}{C_CYAN} ║")
-    
-    print(f"{C_CYAN}╚{border_line}╝{C_RESET}")
+    print(f"{C_CYAN}│{C_YELLOW}{C_BOLD}{'SMNS TECHNOLOGY TOOLKIT'.center(w-2)}{C_CYAN}│{C_RESET}")
+    print(f"{C_CYAN}├{'─'*(w-2)}┤{C_RESET}")
+
+    # Info Section (ဘယ်ညာ အညီဖြစ်အောင် ညှိထားပါသည်)
+    infos = [
+        (f"DEVICE ID", did),
+        (f"KEY", key),
+        (f"EXPIRE", expiry),
+        (f"STATUS", status)
+    ]
+
+    for label, value in infos:
+        # စာသားအရှည်ကို တွက်ချက်ပြီး Space ဖြည့်ခြင်း
+        color = C_GREEN if "VERIFIED" in str(value) else C_WHITE
+        content = f" {C_YELLOW}{label:<10} : {color}{value}"
+        # စာသားနောက်က ပိုနေသော space များကို ဘောင်ညီအောင် ဖြည့်သည်
+        clean_len = len(label) + len(str(value)) + 4
+        padding = " " * (w - clean_len - 3)
+        print(f"{C_CYAN}│{content}{padding}│{C_RESET}")
+
+    # Bottom Border
+    print(f"{C_CYAN}└{'─'*(w-2)}┘{C_RESET}")
 
 if __name__ == "__main__":
     try:
-        # core ထဲမှ Device ID ယူခြင်း
-        # main.so (သို့မဟုတ် core.so) မှ logic ကို ယူသုံးပါမည်
+        # Device ID နှင့် ပတ်သက်သော အချက်အလက်များကို core မှ ယူပါမည်
         did = core.get_device_id()
         
-        # စက်အချိန်ပြင်ထားခြင်း ရှိမရှိ စစ်ဆေးခြင်း
+        # System Time စစ်ဆေးခြင်း
         if not core.check_time_manipulation():
-            os.system('clear')
-            print_center("FATAL ERROR: System time manipulation detected!", C_RED)
+            print(f"{C_RED}[!] Time Manipulation Detected!{C_RESET}")
             sys.exit(1)
 
         authorized, expiry, status, current_key = False, "N/A", "PENDING", "N/A"
         
-        # License စစ်ဆေးခြင်း
+        # License File ရှိမရှိ စစ်ဆေးခြင်း
         if os.path.exists(LICENSE_FILE):
             with open(LICENSE_FILE, "r") as f:
                 current_key = f.read().strip()
             
-            # core logic မှ validate key ကို ခေါ်သုံးပါမည်
             is_valid, msg, exp = core.validate_key(did, current_key)
             if is_valid:
                 authorized, status, expiry = True, msg, exp
-            elif core.verify_legacy_user(current_key):
-                # Legacy user migration logic
-                lt_exp = "212601010000"
-                raw_new = f"{did}{lt_exp}{SECRET_SALT}"
-                new_k = f"{hashlib.sha256(raw_new.encode()).hexdigest()[:12].upper()}{lt_exp}"
-                with open(LICENSE_FILE, "w") as f: f.write(new_k)
-                authorized, status, current_key, expiry = True, "VERIFIED_LIFETIME", new_k, "LIFETIME"
 
-        # Corrected: Color definitions ကို display banner သို့ ပို့ပေးလိုက်ပါပြီ
+        # Banner ပြသခြင်း
         display_smns_banner(did, current_key, expiry, status)
         
-        # Activation Key တောင်းခံခြင်း
         if not authorized:
             print(f"\n{C_CYAN}[?] Activation Key: {C_RESET}")
-            key_input = input(f"\033[92mroot@smns:~# \033[0m").strip().upper()
-            
-            # activation key မှန်မမှန် core မှ စစ်ပါမည်
-            v, m, e = core.validate_key(did, key_input)
+            key_in = input(f"\033[92mroot@smns:~# \033[0m").strip().upper()
+            v, m, e = core.validate_key(did, key_in)
             if v:
-                with open(LICENSE_FILE, "w") as f: f.write(key_input)
-                display_smns_banner(did, key_input, e, m)
+                with open(LICENSE_FILE, "w") as f: f.write(key_in)
+                display_smns_banner(did, key_in, e, m)
                 authorized = True
             else:
-                print_center("Invalid Activation Key!", C_RED)
+                print(f"{C_RED}[X] Invalid Key!{C_RESET}")
                 sys.exit(1)
 
         if authorized:
-            # အောင်မြင်ပါက core မှ main process ကို စတင်ပါမည်
+            # Main process စတင်ခြင်း
+            print(f"\n{C_YELLOW}[*] STAGE 1: EXECUTING INSTANT BYPASS...{C_RESET}")
             core.start_process()
 
     except KeyboardInterrupt:
-        # User မှ ရပ်လိုက်လျှင် ပြသရန်
-        print(f"\n{C_RED}[!] STOPPED BY USER.{C_RESET}")
+        print(f"\n{C_RED}[!] Stopped by user.{C_RESET}")
